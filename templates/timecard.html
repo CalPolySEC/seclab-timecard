@@ -1,1 +1,53 @@
-<h1>Coming soon</h1>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+      }
+      svg {
+        display: block;
+        margin: 35px auto;
+      }
+      circle {
+        fill: #444;
+      }
+      line {
+        stroke: #eee;
+      }
+      .day-name {
+        fill: #555;
+        font-size: 14px;
+      }
+      .label {
+        font-size: 12px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="980" height="540">
+      {%- for day in ('Sunday', 'Monday', 'Tuesday', 'Wednesday',
+                      'Thursday', 'Friday', 'Saturday') %}
+      <g transform="translate(0, {{ 9 + 67 * loop.index0 }})">
+        <line x1="0" y1="60" x2="980" y2="60"></line>
+        <text class="day-name" dy="30">{{ day }}</text>
+        {%- set dayloop = loop %}
+        {%- for hour in range(24) %}
+        {%- set datum = data[dayloop.index0 * 24 + loop.index0] %}
+        <g transform="translate({{ 110 + 36 * hour }}, 0)">
+          <line x1="0" y1="50" x2="0" y2="60"></line>
+          <circle r="{{ datum * 16 }}" cy="25"></circle>
+        </g>
+        {%- endfor %}
+      </g>
+      {%- endfor %}
+      {%- for hour in range(24) %}
+      <text text-anchor="middle" class="label" transform="translate({{ 110 + 36 * hour }}, 500)">
+        {{ (hour - 1) % 12 + 1 }}{% if hour < 12 %}a{% else %}p{% endif %}
+      </text>
+      {%- endfor %}
+    </svg>
+  </body>
+</html>

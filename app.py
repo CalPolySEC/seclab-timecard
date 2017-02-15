@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import Flask, Response, render_template
+from flask import Flask, Response, request, render_template
 from math import sqrt
 import functools
 import os
@@ -10,21 +10,21 @@ app = Flask(__name__)
 app.config['BADGE_LOG_PATH'] = os.environ.get('BADGE_LOG_PATH', 'seclab.log')
 
 
-def cache_from_file(fname):
+def file_memoize(fname):
     """Cache the value of a function until the desired file changes."""
     def wrapper(fn):
         # Store these in lists so inner can access them
-        last_update = [-1]
-        cached_value = [None]
+        last_update = {}
+        cached_values = {}
 
         @functools.wraps(fn)
-        def inner():
+        def inner(*args):
             file_mtime = os.path.getmtime(fname)
-            if file_mtime > last_update[0]:
+            if args not in cached_values or file_mtime > last_update[args]:
                 with open(fname) as f:
-                    cached_value[0] = fn(f)
-                last_update[0] = file_mtime
-            return cached_value[0]
+                    cached_values[args] = fn(f, *args)
+                last_update[args] = file_mtime
+            return cached_values[args]
 
         return inner
     return wrapper
@@ -44,7 +44,7 @@ def iter_ranges(logfile):
                 current_start = None
 
 
-def count_hours(logfile):
+def count_hours(logfile, range_start=None, range_stop=None):
     """Return a list of the cumulative total for each hour in the week."""
     buckets = [0.0] * 24 * 7
     one_hour = timedelta(0, 60 * 60)
@@ -53,6 +53,10 @@ def count_hours(logfile):
     last = None
 
     for start, stop in iter_ranges(logfile):
+        if ((range_start is not None and start < range_start) or
+                (range_stop is not None and stop > range_stop)):
+            continue
+
         if first is None:
             first = start
         last = stop
@@ -76,31 +80,51 @@ def count_hours(logfile):
         for hour in range(start_hour, stop_hour):
             buckets[hour % (24 * 7)] += 1
 
-    return buckets, (last - first) / timedelta(7)
+    if first is not None:
+        num_weeks = (last - first) / timedelta(7)
+    else:
+        num_weeks = None
+
+    return buckets, num_weeks
 
 
-@cache_from_file(app.config['BADGE_LOG_PATH'])
-def compute_timecard(logfile):
+@file_memoize(app.config['BADGE_LOG_PATH'])
+def compute_timecard(logfile, range_start, range_stop):
     """Compute the value and circle radius for each circle in the timecard.
 
     The logfile argument is inserted by cache_from_file, not the end caller.
     """
-    data, num_weeks = count_hours(logfile)
-    num_weeks -= 3
+    data, num_weeks = count_hours(logfile, range_start, range_stop)
 
     # count_hours starts on Monday, but we want to start on Sunday
     data = data[-24:] + data[:-24]
+    # If we got no data, num_weeks will be None. For the math we'll do 1
+    if num_weeks is None:
+        num_weeks = 1
 
     data = [d / num_weeks for d in data]
-    max_hour = max(data)
+    max_hour = max(data) or 1
     radii = [sqrt(h / max_hour) for h in data]
 
     return data, radii
 
 
+def get_date_or_none(obj, key):
+    """If obj contains key and its value is a valid date, return the date.
+
+    Otherwise, return None.
+    """
+    try:
+        return datetime.strptime(obj[key], '%Y-%m-%d')
+    except (KeyError, ValueError):
+        return None
+
+
 @app.route('/timecard.svg')
 def timecard_page():
-    data, radii = compute_timecard()
+    range_start = get_date_or_none(request.args, 'start')
+    range_stop = get_date_or_none(request.args, 'end')
+    data, radii = compute_timecard(range_start, range_stop)
     contents = render_template('timecard.svg', data=data, radii=radii)
     return Response(contents, mimetype='image/svg+xml')
 

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import Flask, render_template
+from flask import Flask, Response, render_template
 from math import sqrt
 import functools
 import os
@@ -87,7 +87,6 @@ def compute_timecard(logfile):
     """
     data, num_weeks = count_hours(logfile)
     num_weeks -= 3
-    print(num_weeks)
 
     # count_hours starts on Monday, but we want to start on Sunday
     data = data[-24:] + data[:-24]
@@ -99,10 +98,11 @@ def compute_timecard(logfile):
     return data, radii
 
 
-@app.route('/timecard/')
+@app.route('/timecard.svg')
 def timecard_page():
     data, radii = compute_timecard()
-    return render_template('timecard.html', data=data, radii=radii)
+    contents = render_template('timecard.svg', data=data, radii=radii)
+    return Response(contents, mimetype='image/svg+xml')
 
 
 if __name__ == '__main__':

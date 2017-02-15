@@ -6,7 +6,7 @@ python:
 
 install: pip install pytest pytest-pep8 -r requirements.txt
 
-script: py.test -vv --pep8 app.py
+script: py.test -vv --pep8 app.py test_app.py
 
 deploy:
   provider: script

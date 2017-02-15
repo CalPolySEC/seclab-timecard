@@ -8,6 +8,6 @@ ssh-add travis/deploy_rsa
 mkdir -m 700 -p ~/.ssh
 echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 git remote add deploy "git@thewhitehat.club:seclab-timecard"
-PUSH="$(git push deploy 2>&1)"
+PUSH="$(git push deploy master 2>&1)"
 echo "$PUSH"
 echo "$PUSH" | grep -q "SUCCESS"

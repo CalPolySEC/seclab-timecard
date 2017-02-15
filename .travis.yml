@@ -1,0 +1,12 @@
+language: python
+
+python:
+  - 3.5
+  - 2.7
+
+deploy:
+  provider: script
+  script: travis/deploy.sh
+  on:
+    branch: master
+    condition: $TRAVIS_JOB_NUMBER = *.1

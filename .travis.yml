@@ -4,7 +4,7 @@ python:
   - 3.5
   - 2.7
 
-install: pip install pytest pytest-pep8
+install: pip install pytest pytest-pep8 -r requirements.txt
 
 script: py.test -vv --pep8 app.py
 

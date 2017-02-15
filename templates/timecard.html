@@ -13,6 +13,18 @@
       circle {
         fill: #444;
       }
+      circle + g {
+        display: none;
+      }
+      circle:hover {
+        fill: #4078c0;
+      }
+      circle:hover + g {
+        display: inline;
+      }
+      rect, polygon {
+        fill: #333;
+      }
       line {
         stroke: #eee;
       }
@@ -23,6 +35,10 @@
       .label {
         font-size: 12px;
         font-weight: 600;
+      }
+      .value {
+        fill: #ddd;
+        font-size: 12px;
       }
     </style>
   </head>
@@ -36,9 +52,17 @@
         {%- set dayloop = loop %}
         {%- for hour in range(24) %}
         {%- set datum = data[dayloop.index0 * 24 + loop.index0] %}
+        {%- set radius = 16 * radii[dayloop.index0 * 24 + loop.index0] %}
         <g transform="translate({{ 110 + 36 * hour }}, 0)">
           <line x1="0" y1="50" x2="0" y2="60"></line>
-          <circle r="{{ datum * 16 }}" cy="25"></circle>
+          <circle r="{{ radius }}" cy="25"></circle>
+          <g class="tooltip" transform="translate(0, {{ 25 - radius }})">
+            <rect x="-30" y="-48" height="38" width="60" rx="3" ry="3"></rect>
+            <polygon points="-5 -11 0 -5 5 -11"></polygon>
+            <text text-anchor="middle" class="value" transform="translate(0, -24)">
+              {{ (datum * 100) | round | int }}%
+            </text>
+          </g>
         </g>
         {%- endfor %}
       </g>

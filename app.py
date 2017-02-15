@@ -49,7 +49,14 @@ def count_hours(logfile):
     buckets = [0.0] * 24 * 7
     one_hour = timedelta(0, 60 * 60)
 
+    first = None
+    last = None
+
     for start, stop in iter_ranges(logfile):
+        if first is None:
+            first = start
+        last = stop
+
         open_ref = datetime(start.year, start.month, start.day, start.hour)
         open_ref += one_hour
         open_ref = min(open_ref, stop)
@@ -69,28 +76,33 @@ def count_hours(logfile):
         for hour in range(start_hour, stop_hour):
             buckets[hour % (24 * 7)] += 1
 
-    return buckets
+    return buckets, (last - first) / timedelta(7)
 
 
 @cache_from_file(app.config['BADGE_LOG_PATH'])
 def compute_timecard(logfile):
-    """Compute the circle radii for each circle in the timecard.
+    """Compute the value and circle radius for each circle in the timecard.
 
     The logfile argument is inserted by cache_from_file, not the end caller.
     """
-    data = count_hours(logfile)
+    data, num_weeks = count_hours(logfile)
+    num_weeks -= 3
+    print(num_weeks)
 
     # count_hours starts on Monday, but we want to start on Sunday
     data = data[-24:] + data[:-24]
 
+    data = [d / num_weeks for d in data]
     max_hour = max(data)
-    return [sqrt(h / max_hour) for h in data]
+    radii = [sqrt(h / max_hour) for h in data]
+
+    return data, radii
 
 
 @app.route('/timecard/')
 def timecard_page():
-    data = compute_timecard()
-    return render_template('timecard.html', data=data)
+    data, radii = compute_timecard()
+    return render_template('timecard.html', data=data, radii=radii)
 
 
 if __name__ == '__main__':

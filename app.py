@@ -60,7 +60,7 @@ def count_hours(logfile):
             stop_ref = datetime(stop.year, stop.month, stop.day, stop.hour)
             stop_frac = (stop - stop_ref) / one_hour
             buckets[24 * stop.weekday() + stop.hour] += stop_frac
-        
+
         start_hour = 24 * open_ref.weekday() + open_ref.hour
         stop_hour = 24 * stop.weekday() + stop.hour
         if stop_hour < start_hour - 1:

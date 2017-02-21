@@ -28,6 +28,10 @@ def test_iter_ranges(logfile):
     ]
 
 
+def test_count_total_hours_empty():
+    assert app.count_total_hours(None, None) == [0] * (24 * 7)
+
+
 def test_count_total_hours():
     totals = app.count_total_hours(datetime(2017, 1, 1), datetime(2017, 1, 1))
     assert totals == [0] * (6 * 24) + [1] + [0] * 23

@@ -26,3 +26,8 @@ def test_iter_ranges(logfile):
         (datetime(2017, 1, 1, 15, 13, 8), datetime(2017, 1, 1, 15, 13, 10)),
         (datetime(2017, 1, 1, 15, 13, 11), datetime(2017, 1, 1, 15, 13, 12)),
     ]
+
+
+def test_count_total_hours():
+    totals = app.count_total_hours(datetime(2017, 1, 1), datetime(2017, 1, 1))
+    assert totals == [0] * (6 * 24) + [1] + [0] * 23

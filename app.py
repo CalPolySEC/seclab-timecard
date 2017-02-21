@@ -44,15 +44,15 @@ def iter_ranges(logfile):
                 current_start = None
 
 
-def count_hours(logfile, range_start=None, range_stop=None):
+def count_hours(ranges, range_start=None, range_stop=None):
     """Return a list of the cumulative total for each hour in the week."""
-    buckets = [0.0] * 24 * 7
+    buckets = [0.0] * (24 * 7)
     one_hour = timedelta(0, 60 * 60)
 
     first = None
     last = None
 
-    for start, stop in iter_ranges(logfile):
+    for start, stop in ranges:
         if ((range_start is not None and start < range_start) or
                 (range_stop is not None and stop > range_stop)):
             continue
@@ -80,12 +80,27 @@ def count_hours(logfile, range_start=None, range_stop=None):
         for hour in range(start_hour, stop_hour):
             buckets[hour % (24 * 7)] += 1
 
-    if first is not None:
-        num_weeks = (last - first) / timedelta(7)
-    else:
-        num_weeks = None
+    return buckets, first, last
 
-    return buckets, num_weeks
+
+def count_total_hours(start, stop):
+    """Count the number of times each hour slot has occurred."""
+    if start is None or stop is None:
+        return [0] * (24 * 7)
+
+    start_hour = 24 * start.weekday() + start.hour
+    stop_hour = 24 * stop.weekday() + stop.hour
+    num_weeks = int((stop - start) / timedelta(7))
+    overlap_offset = (stop_hour - start_hour + 1) % (24 * 7) - 1
+    totals = []
+    for hour in range(24 * 7):
+        total = num_weeks
+        if (hour - start_hour) % (24 * 7) <= overlap_offset:
+            total += 1
+        totals.append(total)
+    print(start_hour, stop_hour)
+    print(start, stop)
+    return totals
 
 
 @file_memoize(app.config['BADGE_LOG_PATH'])
@@ -94,19 +109,19 @@ def compute_timecard(logfile, range_start, range_stop):
 
     The logfile argument is inserted by cache_from_file, not the end caller.
     """
-    data, num_weeks = count_hours(logfile, range_start, range_stop)
+    ranges = iter_ranges(logfile)
+    counts, first, last = count_hours(ranges, range_start, range_stop)
+    totals = count_total_hours(first, last)
 
-    # count_hours starts on Monday, but we want to start on Sunday
-    data = data[-24:] + data[:-24]
-    # If we got no data, num_weeks will be None. For the math we'll do 1
-    if num_weeks is None:
-        num_weeks = 1
+    # datetime's weekday=0 starts on Monday, but we want to start on Sunday
+    counts = counts[-24:] + counts[:-24]
+    totals = totals[-24:] + totals[:-24]
 
-    data = [d / num_weeks for d in data]
-    max_hour = max(data) or 1
-    radii = [sqrt(h / max_hour) for h in data]
+    percents = [(c / t if t else 0) for c, t in zip(counts, totals)]
+    max_count = max(counts) or 1
+    radii = [sqrt(c / max_count) for c in counts]
 
-    return data, radii
+    return percents, radii
 
 
 def get_date_or_none(obj, key):

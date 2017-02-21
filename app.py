@@ -116,8 +116,7 @@ def compute_timecard(logfile, range_start, range_stop):
     totals = totals[-24:] + totals[:-24]
 
     percents = [(c / t if t else 0) for c, t in zip(counts, totals)]
-    max_percent = max(percents) or 1
-    radii = [sqrt(p / max_percent) for p in percents]
+    radii = [sqrt(p) for p in percents]
 
     return percents, radii
 

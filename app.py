@@ -90,7 +90,7 @@ def count_total_hours(start, stop):
 
     start_hour = 24 * start.weekday() + start.hour
     stop_hour = 24 * stop.weekday() + stop.hour
-    num_weeks = int((stop - start) / timedelta(7))
+    num_weeks = (stop - start).days // 7
     overlap_offset = (stop_hour - start_hour + 1) % (24 * 7) - 1
     totals = []
     for hour in range(24 * 7):
@@ -98,8 +98,6 @@ def count_total_hours(start, stop):
         if (hour - start_hour) % (24 * 7) <= overlap_offset:
             total += 1
         totals.append(total)
-    print(start_hour, stop_hour)
-    print(start, stop)
     return totals
 
 

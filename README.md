@@ -4,4 +4,4 @@
 
 > A GitHub-punchcard-style chart of times that the SecLab has been open
 
-[Demo](https://thewhitehat.club/timecard.html)
+[Demo](https://thewhitehat.club/timecard)
